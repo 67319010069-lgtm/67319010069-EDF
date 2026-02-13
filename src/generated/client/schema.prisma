@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String
+  name              String?
+  image             String?
+  bio               String?
+  role              String    @default("student") // student, instructor
+  resetToken        String?
+  resetTokenExpires DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  courses           Course[]
+  comments          Comment[]
+  history           History[]
+}
+
+model Course {
+  id           String    @id @default(cuid())
+  title        String
+  description  String
+  instructorId String
+  instructor   User      @relation(fields: [instructorId], references: [id])
+  status       String    @default("draft") // draft, pending, published
+  category     String
+  tags         String? // comma separated tags
+  price        Float     @default(0)
+  thumbnailUrl String?
+  previewUrl   String?
+  viewCount    Int       @default(0) // For popularity
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lessons      Lesson[]
+  comments     Comment[]
+  history      History[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  icon        String?
+  courseCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Lesson {
+  id        String   @id @default(cuid())
+  title     String
+  type      String // video, pdf, audio, article
+  url       String?
+  content   String?
+  duration  Int? // in seconds
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  text      String
+  rating    Int      @default(5)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model History {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id])
+  viewedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([courseId])
+}
